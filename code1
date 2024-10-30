@@ -67,6 +67,7 @@ def detect(mask_ball, mask_field, frame):
             surrounding_area2 = mask_ball[y1:y2, x1:x2]
             orange_ratio = np.sum(surrounding_area == 255) / surrounding_area.size
 
+            #cek bola oren di atas lapangan hijau
             if (green_ratio > 0.1 and orange_ratio <0.54):
                 cv2.circle(frame, (x, y), r, (0, 255, 0), 2)
                 cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
