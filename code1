@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 
-prev_data=[]
-
 def ball(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -14,22 +12,22 @@ def ball(frame):
     kernel = np.ones((15, 15), np.uint8)
     mask_ball = cv2.morphologyEx(mask_ball, cv2.MORPH_CLOSE, kernel)
 
-    contours, _ = cv2.findContours(mask_ball, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    min_area_threshold = 700  # Ambang batas minimum area hijau untuk dianggap sebagai lapangan
-    ball_cleaned = np.zeros_like(mask_ball)
+    #contours, _ = cv2.findContours(mask_ball, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #min_area_threshold = 700  # Ambang batas minimum area oren
+    #ball_cleaned = np.zeros_like(mask_ball)
 
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if area > min_area_threshold:
-            cv2.drawContours(ball_cleaned, [contour], -1, 255, thickness=cv2.FILLED)  # Hanya gambar area besar
+    #for contour in contours:
+    #    area = cv2.contourArea(contour)
+    #    if area > min_area_threshold:
+    #        cv2.drawContours(ball_cleaned, [contour], -1, 255, thickness=cv2.FILLED)  # Hanya gambar area besar
 
-    return ball_cleaned
+    return mask_ball
 
 def field(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     # green
-    lower_green = np.array([30, 50, 15])
+    lower_green = np.array([30, 100, 45])
     upper_green = np.array([100, 255, 255])
     mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
@@ -53,8 +51,14 @@ def field(frame):
         area = cv2.contourArea(contour)
         if area > min_area_threshold:
             cv2.drawContours(field_cleaned, [contour], -1, 255, thickness=cv2.FILLED)  # Hanya gambar area besar
+    
+    #ekspansi field untuk bola di ujung lapangan
+    kernel_dilate = np.ones((60, 60), np.uint8)  # Kernel dilasi dengan ukuran 40x40
+    field_expanded = cv2.dilate(field_cleaned, kernel_dilate)
 
-    return field_cleaned
+    result = cv2.bitwise_and(frame, frame, mask=field_expanded)
+
+    return result, field_cleaned
 
 def detect(mask_ball, mask_field, frame):
     blurred_ball_mask = cv2.GaussianBlur(mask_ball, (9, 9), 2)
@@ -67,7 +71,7 @@ def detect(mask_ball, mask_field, frame):
         param1=50,
         param2=30,
         minRadius=10,
-        maxRadius=100
+        maxRadius=1000
     )
 
     if circles is not None:
@@ -115,47 +119,48 @@ def detect(mask_ball, mask_field, frame):
                     last_orange = idx + line_x_start  # posisi di garis asli
                     break
 
-            #gambar garis diameter bola
-            cv2.line(frame, (first_orange, line_y), (last_orange, line_y), (0, 255, 0), 2)
+            if last_orange is not None and first_orange is not None:
+                total_pixel = last_orange - first_orange
+            else:
+                continue
 
-            orange_pixel_count = np.sum(orange_line == 255)
-            total_pixel = last_orange - first_orange
+            #cek apakah bola berada di atas lapangan
+            if (field_ratio > 0.16 and ball_ratio < 0.37):
+                x_new= int((last_orange + first_orange)/2)  #nilai titik pusat baru setelah cek pixel
+                r_new= int(total_pixel/2)            #nilai jari jari baru setelah cek pixel
+                cv2.circle(frame, (x_new, y), r_new, (0, 255, 0), 2)
+                cv2.circle(frame, (x_new, y), 2, (0, 0, 255), 3)
+            else:
+                continue
 
             # Tampilkan jumlah piksel oranye dan total piksel pada gambar
             text= f"Diameter: {total_pixel} pixel"
             cv2.putText(frame, text, (x - r, y + r + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+            #gambar garis diameter bola
+            cv2.line(frame, (first_orange, line_y), (last_orange, line_y), (0, 255, 0), 2)
 
             # Tandai piksel yang bukan bola dengan titik merah
             for px in range(first_orange, last_orange):
                 if orange_line[px - line_x_start] != 255:
                     cv2.circle(frame, (px, line_y), 1, (0, 0, 255), -1)
 
-            #cek apakah bola berada di atas lapangan
-            if (field_ratio > 0.16 and ball_ratio < 0.37):
-                x_new= int((last_orange + first_orange)/2)  #nilai titik pusat baru setelah cek pixel
-                r_new= int(orange_pixel_count/2)            #nilai jari jari baru setelah cek pixel
-                cv2.circle(frame, (x_new, y), r_new, (0, 255, 0), 2)
-                cv2.circle(frame, (x_new, y), 2, (0, 0, 255), 3)
-                prev_data= [x_new, y, r_new]                #simpan posisi dan jari jari bola
-            elif circles is None:                           #gunakan frame sebelumnya jika bola tidak terdetect
-                x, y, r= prev_data
-                cv2.circle(frame, (x, y), r, (0, 255, 0), 2)
-                cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
-                break
-
             #distance
             actual_diameter= 0.13 #meter
             focal_length= 700
             detected_diameter= total_pixel
-            distance= (actual_diameter*focal_length)/detected_diameter
+            if detected_diameter==0:
+                distance=0
+            else:
+                distance= (actual_diameter*focal_length)/detected_diameter
             text2 = f"Distance: {distance:.2f} meter"
             cv2.putText(frame, text2, (x - r, y + r + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-            #print("pixel= ", total_pixel, "distance= ", int(distance*100))
+            print("pixel= ", total_pixel, "distance= %.3f cm" %(distance*100))
 
     return frame
 
-cap = cv2.VideoCapture('sample2.mp4')
+cap = cv2.VideoCapture('sample4.mp4')
 
 if not cap.isOpened():
     print("Error: Tidak dapat membuka video.")
@@ -166,15 +171,15 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-out = cv2.VideoWriter('test2_3.mp4', fourcc, fps, (width, height))
+out = cv2.VideoWriter('test4_5.mp4', fourcc, fps, (width, height))
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    mask_ball = ball(frame)
-    mask_field = field(frame)
+    seg_field, mask_field = field(frame)
+    mask_ball = ball(seg_field)
     final_frame = detect(mask_ball, mask_field, frame)
 
     if final_frame is not None:
