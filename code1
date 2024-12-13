@@ -51,7 +51,7 @@ def field(frame):
         area = cv2.contourArea(contour)
         if area > min_area_threshold:
             cv2.drawContours(field_cleaned, [contour], -1, 255, thickness=cv2.FILLED)  # Hanya gambar area besar
-    
+
     #ekspansi field untuk bola di ujung lapangan
     kernel_dilate = np.ones((60, 60), np.uint8)  # Kernel dilasi dengan ukuran 40x40
     field_expanded = cv2.dilate(field_cleaned, kernel_dilate)
@@ -147,7 +147,7 @@ def detect(mask_ball, mask_field, frame):
 
             #distance
             actual_diameter= 0.13 #meter
-            focal_length= 700
+            focal_length= 71.41
             detected_diameter= total_pixel
             if detected_diameter==0:
                 distance=0
@@ -160,10 +160,11 @@ def detect(mask_ball, mask_field, frame):
 
     return frame
 
-cap = cv2.VideoCapture('sample4.mp4')
+cap = cv2.VideoCapture(r"D:\GMRT\Altair\vision\Program deteksi bola mp4\sweeping.mp4")
+
 
 if not cap.isOpened():
-    print("Error: Tidak dapat membuka video.")
+    print("Error: No Video Opened")
     exit()
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -184,9 +185,10 @@ while True:
 
     if final_frame is not None:
         out.write(final_frame)
+        cv2.imshow('Video Deteksi Bola', final_frame)
 
-    #if cv2.waitKey(1) & 0xFF == ord('q'):
-    #    break
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 
 cap.release()
