@@ -175,6 +175,14 @@ def detect(mask_ball, mask_field, frame):
             text2 = f"Distance: {distance:.2f} meter"
             cv2.putText(frame, text2, (x_new - r_new, y_new + r_new + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
+            cv2.line(frame, (center_x, y_end), (x_new, y_new), (0, 0, 255), 2)
+            if x_new > center_x:
+                print("bola di kanan %d pixel" %(x_new - center_x))
+            elif x_new < center_x:
+                print("bola di kiri %d pixel" %(x_new - center_x))
+            else:
+                print("bola tepat di tengah frame")
+
             #print("distance= %.3f cm" %(distance*100))
 
     return frame
@@ -186,19 +194,44 @@ if not cap.isOpened():
     print("Error: No Video Opened")
     exit()
 
+#fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#fps = cap.get(cv2.CAP_PROP_FPS)
+#width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+#height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+#out = cv2.VideoWriter('test2.mp4', fourcc, fps, (width, height))
+
 while True:
     ret, frame = cap.read()
     if not ret:
         break
+    
+    #=================================================================================
+    height, width = frame.shape[:2]
+
+    # Tentukan posisi X di tengah frame
+    center_x = width // 2
+
+    # Tentukan posisi Y untuk garis vertikal (dari atas ke bawah)
+    y_start = 0
+    y_end = height
+
+    # Gambar garis vertikal di tengah
+    cv2.line(frame, (center_x, y_start), (center_x, y_end), (0, 0, 255), 2)
+    #==========================================================================
 
     seg_field, mask_field = field(frame)
     mask_ball = ball(seg_field)
     final_frame = detect(mask_ball, mask_field, frame)
 
+    #cv2.imshow('lapangan', mask_field)
+
     if final_frame is not None:
+        #out.write(final_frame)
         cv2.imshow('Video Deteksi Bola', final_frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+#out.release()
 cv2.destroyAllWindows()
