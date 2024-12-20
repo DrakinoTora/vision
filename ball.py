@@ -177,9 +177,9 @@ def detect(mask_ball, mask_field, frame):
 
             cv2.line(frame, (center_x, y_end), (x_new, y_new), (0, 0, 255), 2)
             if x_new > center_x:
-                print("bola di kanan %d pixel" %(x_new - center_x))
+                print("bola di kanan %d x" %(x_new - center_x))
             elif x_new < center_x:
-                print("bola di kiri %d pixel" %(x_new - center_x))
+                print("bola di kiri %d x" %(x_new - center_x))
             else:
                 print("bola tepat di tengah frame")
 
