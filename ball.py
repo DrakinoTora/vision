@@ -57,7 +57,7 @@ def detect(mask_ball, mask_field, frame):
         for i in circles[0, :]:
             x, y, r = i[0], i[1], i[2]
 
-            #=============================================horizontal line=======================================================
+            #horizontal line
             line_y = y
             line_x_start = 0
             line_x_end = frame.shape[1]
@@ -87,7 +87,7 @@ def detect(mask_ball, mask_field, frame):
             r_new = int(total_x_pixel/2)
             x_new = first_orange + int(total_x_pixel/2)
 
-            #=============================================vertikal line=======================================================
+            #vertiksl line
             line_x = first_orange + int(r_new /4)
             line_y_start = 0
             line_y_end = frame.shape[0]
@@ -119,7 +119,7 @@ def detect(mask_ball, mask_field, frame):
 
             y_new= bot_orange - int(total_y_pixel/2)
 
-            #=============================================horizontal final=======================================================
+            #horizontal line
             if y_new != y:
                 line_y = y_new
                 orange_hline = mask_ball[line_y, line_x_start:line_x_end]
@@ -146,7 +146,7 @@ def detect(mask_ball, mask_field, frame):
                 r_new = int(total_x_pixel/2)
                 x_new = first_orange + int(total_x_pixel/2)
 
-            #=============================================ratio field ball====================================================
+            #field ratio
             R = int(r_new * 1.5)  #jarak deteksi
             x1, y1 = max(x_new - R, 0), max(y_new - R, 0)
             x2, y2 = min(x_new + R, frame.shape[1]), min(y_new + R, frame.shape[0])
@@ -164,7 +164,7 @@ def detect(mask_ball, mask_field, frame):
             else:
                 continue
 
-            #=============================================distance=======================================================
+            #distance
             actual_diameter= 0.13 #meter
             focal_length= 71.41
             detected_diameter= total_x_pixel
@@ -206,7 +206,6 @@ while True:
     if not ret:
         break
     
-    #=================================================================================
     height, width = frame.shape[:2]
 
     # Tentukan posisi X di tengah frame
@@ -218,7 +217,6 @@ while True:
 
     # Gambar garis vertikal di tengah
     cv2.line(frame, (center_x, y_start), (center_x, y_end), (0, 0, 255), 2)
-    #==========================================================================
 
     seg_field, mask_field = field(frame)
     mask_ball = ball(seg_field)
