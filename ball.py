@@ -15,7 +15,7 @@ def ball(frame):
     return mask_ball
 
 def field(frame):
-    low_green = np.array([30, 100, 45])
+    low_green = np.array([30, 30, 45])
     up_green = np.array([85, 255, 255])
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
